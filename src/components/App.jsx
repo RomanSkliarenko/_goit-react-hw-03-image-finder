@@ -1,10 +1,11 @@
 import React, { Component } from 'react';
-import Searchbar from './searchbar';
+import Searchbar from './Searchbar';
 import fetchService from './fetchService';
-import Loader from './loader';
-import ImageGallery from './imageGallery';
-import Modal from './modal';
-import Button from './button';
+import Loader from './Loader';
+import ImageGallery from './ImageGallery';
+import Modal from './Modal';
+import Button from './Button';
+import Notiflix from 'notiflix';
 
 export class App extends Component {
   state = {
@@ -18,10 +19,8 @@ export class App extends Component {
 
   componentDidMount() {
     this.setState({ isLoad: true });
-    fetchService('', this.state.page).then((res) => {
-      this.setState((prevState) => {
-        return { ...prevState, images: res.data.hits };
-      });
+    fetchService(this.state.searchQuery, this.state.page).then((res) => {
+      this.setState({ images: res.data.hits });
     })
       .catch((err) => {
         console.log(err);
@@ -32,51 +31,63 @@ export class App extends Component {
   }
 
   componentDidUpdate(prevProps, prevState) {
-    if (prevState.page !== this.state.page) {
-      window.scrollTo({
-        top: document.documentElement.scrollHeight,
-        behavior: 'smooth',
-      });
+    if (prevState.page !== this.state.page && prevState.searchQuery === this.state.searchQuery) {
+      setTimeout(() => {
+        window.scrollTo({
+          top: document.documentElement.scrollHeight,
+          behavior: 'smooth',
+        });
+      }, 300);
+      this.setState({ isLoad: true });
+      fetchService(this.state.searchQuery, this.state.page).then((res) => {
+        this.setState({ images: [...this.state.images, ...res.data.hits] });
+      })
+        .catch((err) => {
+          console.log(err);
+        })
+        .finally(() => {
+          this.setState({ isLoad: false });
+
+        });
+    }
+    if (prevState.searchQuery !== this.state.searchQuery) {
+      fetchService(this.state.searchQuery, this.state.page).then((res) => {
+        this.setState({ images: res.data.hits });
+      })
+        .catch((err) => {
+          console.log(err);
+        })
+        .finally(() => {
+          this.setState({ isLoad: false });
+        });
     }
   }
 
   searchImageHandler = (searchQuery) => {
-    this.setState({ isLoad: true });
-    fetchService(searchQuery, this.state.page).then((res) => {
-
-      this.setState((prevState) => {
-        return { ...prevState, images: res.data.hits, searchQuery, page: 1 };
-      });
-    })
-      .catch((err) => {
-        console.log(err);
-      })
-      .finally(() => {
-        this.setState({ isLoad: false });
-      });
+    if (searchQuery === '') {
+      Notiflix.Notify.warning('Please enter search query');
+      return;
+    }
+    if (searchQuery === this.state.searchQuery) {
+      Notiflix.Notify.warning('Please enter new search query');
+      return;
+    }
+    this.setState({ searchQuery, page: 1 });
   };
 
   loadMoreBtn = () => {
-    this.setState({ isLoad: true });
-    fetchService(this.state.searchQuery, this.state.page + 1).then((res) => {
-
-      this.setState((prevState) => {
-        return { ...prevState, images: [...prevState.images, ...res.data.hits], page: prevState.page + 1 };
-      });
-    })
-      .catch((err) => {
-        console.log(err);
-      })
-      .finally(() => {
-        this.setState({ isLoad: false });
-      });
+    this.setState((prevState) => {
+      return { ...prevState, page: prevState.page + 1 };
+    });
   };
+
   openModal = (modalImage) => {
     this.setState({
       modalIsOpen: true,
       modalImage: modalImage,
     });
   };
+
   closeModal = () => {
     this.setState({ modalIsOpen: false });
   };
