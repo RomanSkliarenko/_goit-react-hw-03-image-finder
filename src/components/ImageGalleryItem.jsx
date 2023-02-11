@@ -10,7 +10,7 @@ const ImageGalleryItem = ({ image, openModal }) => {
         alt={tags}
         className="ImageGalleryItem-image"
         data-img={largeImageURL}
-        onClick={(event) => openModal(event.target.dataset.img)}
+        onClick={({target}) => openModal(target.dataset.img)}
       />
     </li>
   );

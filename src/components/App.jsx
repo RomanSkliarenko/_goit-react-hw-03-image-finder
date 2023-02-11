@@ -1,115 +1,114 @@
-import React, { Component } from 'react';
+import { useEffect, useState } from 'react';
 import Searchbar from './Searchbar';
-import fetchService from './fetchService';
 import Loader from './Loader';
 import ImageGallery from './ImageGallery';
 import Modal from './Modal';
 import Button from './Button';
 import Notiflix from 'notiflix';
+import fetchService from './fetchService';
 
-export class App extends Component {
-  state = {
-    images: [],
-    searchQuery: '',
-    page: 1,
-    modalIsOpen: false,
-    modalImage: '',
-    isLoad: false,
+
+function App() {
+  const [images, setImages] = useState([]);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [page, setPage] = useState(1);
+  const [modalIsOpen, setModalIsOpen] = useState(false);
+  const [modalImage, setModalImage] = useState('');
+  const [isLoad, setIsLoad] = useState(false);
+
+  const searchImageHandler = (query) => {
+    if (query === '') {
+      Notiflix.Notify.warning('Please enter search query');
+      return;
+    }
+    if (query === searchQuery) {
+      Notiflix.Notify.warning('Please enter new search query');
+      return;
+    }
+    setPage(1);
+    setSearchQuery(query);
   };
 
-  componentDidMount() {
-    this.setState({ isLoad: true });
-    fetchService(this.state.searchQuery, this.state.page).then((res) => {
-      this.setState({ images: res.data.hits });
+  const loadMoreBtn = () => {
+    setPage(page + 1);
+  };
+
+  const openModal = (modalImage) => {
+    setModalIsOpen(true);
+    setModalImage(modalImage);
+  };
+
+  const closeModal = () => {
+    setModalIsOpen(false);
+  };
+
+
+  useEffect(() => {
+    setIsLoad(true);
+    fetchService(searchQuery, page).then(({data}) => {
+      const { hits } = data;
+      setImages(hits);
     })
       .catch((err) => {
         console.log(err);
       })
       .finally(() => {
-        this.setState({ isLoad: false });
+        setIsLoad(false);
       });
-  }
+  }, []);
 
-  componentDidUpdate(prevProps, prevState) {
-    if (prevState.page !== this.state.page && prevState.searchQuery === this.state.searchQuery) {
-      setTimeout(() => {
-        window.scrollTo({
-          top: document.documentElement.scrollHeight,
-          behavior: 'smooth',
-        });
-      }, 300);
-      this.setState({ isLoad: true });
-      fetchService(this.state.searchQuery, this.state.page).then((res) => {
-        this.setState({ images: [...this.state.images, ...res.data.hits] });
+
+  useEffect(() => {
+    setTimeout(() => {
+      window.scrollTo({
+        top: document.documentElement.scrollHeight,
+        behavior: 'smooth',
+      });
+    }, 300);
+    fetchService(searchQuery, page).then(({data}) => {
+      const { hits } = data;
+      setImages([...images, ...hits]);
+    })
+      .catch((err) => {
+        console.log(err);
       })
-        .catch((err) => {
-          console.log(err);
-        })
-        .finally(() => {
-          this.setState({ isLoad: false });
+      .finally(() => {
+        setIsLoad(false);
+      });
 
-        });
-    }
-    if (prevState.searchQuery !== this.state.searchQuery) {
-      fetchService(this.state.searchQuery, this.state.page).then((res) => {
-        this.setState({ images: res.data.hits });
+  }, [page]);
+
+  useEffect(() => {
+    setIsLoad(true);
+    fetchService(searchQuery, page).then(({data}) => {
+      const { hits } = data;
+      setImages(hits);
+    })
+      .catch((err) => {
+        console.log(err);
       })
-        .catch((err) => {
-          console.log(err);
-        })
-        .finally(() => {
-          this.setState({ isLoad: false });
-        });
-    }
-  }
+      .finally(() => {
+        setIsLoad(false);
+      });
+  }, [searchQuery]);
 
-  searchImageHandler = (searchQuery) => {
-    if (searchQuery === '') {
-      Notiflix.Notify.warning('Please enter search query');
-      return;
-    }
-    if (searchQuery === this.state.searchQuery) {
-      Notiflix.Notify.warning('Please enter new search query');
-      return;
-    }
-    this.setState({ searchQuery, page: 1 });
-  };
 
-  loadMoreBtn = () => {
-    this.setState((prevState) => {
-      return { ...prevState, page: prevState.page + 1 };
-    });
-  };
+  return (
+    <div className='App'>
+      <Searchbar searchImageHandler={searchImageHandler} />
+      {isLoad ? (
+        <Loader />
+      ) : null}
+      <ImageGallery images={images} openModal={openModal} />
+      {images.length > 0 ? (
+        <Button loadMoreBtn={loadMoreBtn} />
+      ) : null}
 
-  openModal = (modalImage) => {
-    this.setState({
-      modalIsOpen: true,
-      modalImage: modalImage,
-    });
-  };
-
-  closeModal = () => {
-    this.setState({ modalIsOpen: false });
-  };
-
-  render() {
-    return (
-      <div className='App'>
-        <Searchbar searchImageHandler={this.searchImageHandler} />
-        {this.state.isLoad ? (
-          <Loader />
-        ) : null}
-        <ImageGallery images={this.state.images} openModal={this.openModal} />
-        {this.state.images.length > 0 ? (
-          <Button loadMoreBtn={this.loadMoreBtn} />
-        ) : null}
-
-        {this.state.modalIsOpen ? (
-          <Modal img={this.state.modalImage} closeModal={this.closeModal} />
-        ) : null}
-      </div>
-    );
-  }
+      {modalIsOpen ? (
+        <Modal img={modalImage} closeModal={closeModal} />
+      ) : null}
+    </div>
+  );
 }
 
 export default App;
