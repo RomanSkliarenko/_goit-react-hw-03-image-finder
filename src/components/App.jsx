@@ -27,10 +27,17 @@ function App() {
     }
     setPage(1);
     setSearchQuery(query);
+    setImages([])
   };
 
   const loadMoreBtn = () => {
     setPage(page + 1);
+    setTimeout(() => {
+      window.scrollTo({
+        top: document.documentElement.scrollHeight,
+        behavior: 'smooth',
+      });
+    }, 300);
   };
 
   const openModal = (modalImage) => {
@@ -57,17 +64,12 @@ function App() {
       });
   }, []);
 
-
   useEffect(() => {
-    setTimeout(() => {
-      window.scrollTo({
-        top: document.documentElement.scrollHeight,
-        behavior: 'smooth',
-      });
-    }, 300);
     fetchService(searchQuery, page).then(({data}) => {
       const { hits } = data;
-      setImages([...images, ...hits]);
+      setImages(prevState => {
+        return [...prevState, ...hits]
+      });
     })
       .catch((err) => {
         console.log(err);
@@ -75,22 +77,8 @@ function App() {
       .finally(() => {
         setIsLoad(false);
       });
+  }, [searchQuery, page]);
 
-  }, [page]);
-
-  useEffect(() => {
-    setIsLoad(true);
-    fetchService(searchQuery, page).then(({data}) => {
-      const { hits } = data;
-      setImages(hits);
-    })
-      .catch((err) => {
-        console.log(err);
-      })
-      .finally(() => {
-        setIsLoad(false);
-      });
-  }, [searchQuery]);
 
 
   return (

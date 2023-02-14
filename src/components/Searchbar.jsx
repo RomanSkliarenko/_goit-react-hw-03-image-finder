@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import PropTypes from 'prop-types';
 
 const Searchbar = ({ searchImageHandler }) => {
   const [query, setQuery] = useState('');
@@ -31,6 +32,10 @@ const Searchbar = ({ searchImageHandler }) => {
       </form>
     </header>
   );
+};
+
+Searchbar.propTypes = {
+  searchImageHandler: PropTypes.func.isRequired,
 };
 
 export default Searchbar;
